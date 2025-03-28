@@ -1,74 +1,91 @@
+// components/LifeSimulator.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 
-function getToday() {
-  return new Date().toISOString().split("T")[0];
-}
+// props 타입 정의
+type LifeSimulatorProps = {
+  selectedDate: string;
+};
 
-export default function LifeSimulator() {
+const choices = [
+  {
+    time: "morning",
+    question: "☀️ 아침에 무엇을 했나요?",
+    options: [
+      { label: "A. 물 한 잔 마심", effect: +1 },
+      { label: "B. 스트레칭 5분", effect: +1 },
+      { label: "C. 아무것도 안 함", effect: -1 },
+    ],
+  },
+  {
+    time: "lunch",
+    question: "🌿 점심 직후 어떤 활동을 했나요?",
+    options: [
+      { label: "A. 산책 5분", effect: +1 },
+      { label: "B. 커피 마심", effect: 0 },
+      { label: "C. 바로 앉아 일함", effect: -1 },
+    ],
+  },
+  {
+    time: "evening",
+    question: "🌙 저녁에 무엇을 했나요?",
+    options: [
+      { label: "A. 기름진 음식 섭취", effect: -2 },
+      { label: "B. 가벼운 스트레칭", effect: +1 },
+      { label: "C. 운동 30분", effect: +2 },
+    ],
+  },
+];
+
+export default function LifeSimulator({ selectedDate }: LifeSimulatorProps) {
   const [life, setLife] = useState(87.6);
   const [log, setLog] = useState<string[]>([]);
   const [report, setReport] = useState<string | null>(null);
 
   useEffect(() => {
-    const today = getToday();
-    const saved = localStorage.getItem("habit-" + today);
+    const saved = localStorage.getItem("habit-" + selectedDate);
     if (saved) setLog(JSON.parse(saved));
-  }, []);
+  }, [selectedDate]);
 
   useEffect(() => {
-    const today = getToday();
-    localStorage.setItem("habit-" + today, JSON.stringify(log));
-  }, [log]);
-
-  const choices = [
-    {
-      question: "☀️ 아침 습관은?",
-      options: [
-        { label: "A. 핸드폰 1시간 보다 일어남", effect: -1 },
-        { label: "B. 스트레칭 5분 하기", effect: +1 },
-        { label: "C. 5시간 자고 일어나기", effect: -2 },
-      ],
-    },
-    {
-      question: "🧘 스트레스 해소 방법은?",
-      options: [
-        { label: "A. 담배 피움", effect: -3 },
-        { label: "B. 참고 일함", effect: -1 },
-        { label: "C. 산책하거나 음악 듣기", effect: +1 },
-      ],
-    },
-  ];
+    localStorage.setItem("habit-" + selectedDate, JSON.stringify(log));
+  }, [log, selectedDate]);
 
   const handleSelect = (option: { label: string; effect: number }) => {
-    setLife((prev) => prev + option.effect);
-    setLog((prev) => [...prev, option.label]);
+    setLog((prev) => [...prev, `${option.label} → ${option.effect > 0 ? "+" : ""}${option.effect}년`]);
+    setLife((prev) => Math.round((prev + option.effect) * 10) / 10);
   };
 
-  const generateReport = () => {
-    const positive = log.filter((l) => l.includes("+"));
-    const negative = log.filter((l) => l.includes("-")).length;
-    setReport(
-      `이번 주 Yuna의 습관 리포트 📗\n✅ 긍정적인 선택: ${positive.length}회  ⚠️ 부정적인 선택: ${negative}회  📊 전체 선택 수: ${log.length}회`
-    );
+  const getFeedback = () => {
+    const good = log.filter((l) => l.includes("+")).length;
+    const bad = log.filter((l) => l.includes("-")).length;
+    const total = log.length;
+
+    if (good > bad) {
+      return `🎉 좋은 습관이 더 많았어요! 계속 유지해봐요.`;
+    } else if (bad > 0) {
+      return `⚠️ 안 좋은 습관이 더 많아요. 내일은 더 좋은 선택을 해봐요.`;
+    } else {
+      return `기록이 없어요.`;
+    }
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold">🎮 YUNA: 생존의 기술</h1>
-      <p>당신의 현재 생존 예상 나이: <b>{life.toFixed(1)}세</b></p>
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold">🧬 Yuna의 생존 시뮬레이터</h2>
+      <p className="text-lg">당신의 현재 생존 예상 나이: <b>{life.toFixed(1)}세</b></p>
 
-      {choices.map((q, i) => (
+      {choices.map((choice, i) => (
         <Card key={i}>
-          <CardContent>
-            <p className="font-medium mb-2">{q.question}</p>
-            <div className="space-x-2">
-              {q.options.map((o, j) => (
-                <Button key={j} onClick={() => handleSelect(o)}>
-                  {o.label}
+          <CardContent className="space-y-2 py-4">
+            <p className="font-semibold">{choice.question}</p>
+            <div className="flex gap-2 flex-wrap">
+              {choice.options.map((opt, j) => (
+                <Button key={j} variant="outline" onClick={() => handleSelect(opt)}>
+                  {opt.label}
                 </Button>
               ))}
             </div>
@@ -77,14 +94,17 @@ export default function LifeSimulator() {
       ))}
 
       <div>
-        <h2 className="font-bold mt-6">📝 선택 로그</h2>
-        <ul className="list-disc list-inside">
+        <h3 className="font-semibold text-md">📋 선택 로그</h3>
+        <ul className="list-disc list-inside text-sm space-y-1">
           {log.map((entry, i) => (
             <li key={i}>{entry}</li>
           ))}
         </ul>
-        <Button onClick={generateReport} className="mt-2">📊 습관 리포트 생성하기</Button>
-        {report && <p className="mt-2 whitespace-pre-line">{report}</p>}
+      </div>
+
+      <div className="mt-4 border-t pt-4 text-sm">
+        <p>이번 날 선택 리포트 📆 {selectedDate}</p>
+        <p>{getFeedback()}</p>
       </div>
     </div>
   );

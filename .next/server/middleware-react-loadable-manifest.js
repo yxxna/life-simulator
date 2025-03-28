@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST="{\"pages/userinfo.tsx -> ../components/UserInfoForm\":{\"id\":\"pages/userinfo.tsx -> ../components/UserInfoForm\",\"files\":[\"static/chunks/_pages-dir-browser_components_UserInfoForm_tsx.js\"]}}"
